@@ -19,85 +19,179 @@ st.set_page_config(
 st.markdown(
     """
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap');
+    :root {
+        --bg: #081425;
+        --panel: rgba(15, 23, 42, .72);
+        --panel-strong: rgba(17, 28, 45, .94);
+        --line: rgba(148, 163, 184, .16);
+        --text: #d8e3fb;
+        --muted: #9aa8bd;
+        --gold: #e2c383;
+        --blue: #b9c8de;
+        --danger: #ffb4ab;
+    }
     .stApp {
         background:
-            radial-gradient(circle at top left, rgba(20, 184, 166, .16), transparent 24rem),
-            radial-gradient(circle at bottom right, rgba(249, 115, 22, .10), transparent 26rem),
-            linear-gradient(135deg, #f8fafc 0%, #eef7f4 48%, #f7f3ea 100%);
-        color: #0f172a;
+            radial-gradient(circle at 18% 0%, rgba(226, 195, 131, .10), transparent 24rem),
+            radial-gradient(circle at 86% 14%, rgba(185, 200, 222, .12), transparent 28rem),
+            linear-gradient(135deg, #040e1f 0%, #081425 44%, #111c2d 100%);
+        color: var(--text);
+        font-family: "Inter", sans-serif;
     }
     [data-testid="stSidebar"] {
-        background: rgba(255, 255, 255, .88);
-        border-right: 1px solid rgba(15, 23, 42, .10);
+        background: var(--panel-strong);
+        border-right: 1px solid var(--line);
     }
     [data-testid="stSidebar"] * {
-        color: #0f172a !important;
+        color: var(--text) !important;
     }
     [data-testid="stSidebar"] input,
     [data-testid="stSidebar"] textarea,
     [data-testid="stSidebar"] [data-baseweb="select"] *,
     [data-testid="stSidebar"] [data-baseweb="base-input"] {
-        color: #f8fafc !important;
+        color: var(--text) !important;
+        background: #040e1f !important;
+        border-color: rgba(148, 163, 184, .22) !important;
+    }
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] .stCaptionContainer {
+        color: var(--muted) !important;
     }
     [data-testid="stHeader"] {
         background: transparent;
     }
     .block-container {
-        padding-top: 2rem;
+        padding-top: 1.4rem;
         padding-bottom: 2rem;
-        max-width: 1220px;
+        max-width: 1360px;
     }
     .hero {
-        padding: 2rem;
-        border: 1px solid rgba(15, 23, 42, .10);
-        background: rgba(255, 255, 255, .82);
+        padding: 2.2rem;
+        border: 1px solid var(--line);
+        background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.015)), var(--panel);
         border-radius: 18px;
-        margin-bottom: 1.25rem;
-        box-shadow: 0 18px 45px rgba(15, 23, 42, .08);
+        margin-bottom: 1.2rem;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, .26);
+        backdrop-filter: blur(14px);
+        position: relative;
+        overflow: hidden;
+    }
+    .hero:after {
+        content: "";
+        position: absolute;
+        width: 360px;
+        height: 360px;
+        right: -120px;
+        top: -160px;
+        background: radial-gradient(circle, rgba(226,195,131,.18), transparent 68%);
+        pointer-events: none;
     }
     .hero h1 {
-        font-size: 2.5rem;
+        font-size: 2.8rem;
         margin: 0 0 .5rem 0;
-        color: #0f172a;
+        color: #f8fafc;
+        font-weight: 800;
+        letter-spacing: 0;
     }
     .hero p {
         font-size: 1.05rem;
-        color: #475569;
+        color: var(--muted);
         margin: 0;
         max-width: 780px;
     }
+    .eyebrow {
+        color: var(--gold);
+        font-family: "JetBrains Mono", monospace;
+        font-size: .72rem;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        margin-bottom: .8rem;
+    }
+    .brand-block {
+        border-bottom: 1px solid var(--line);
+        margin: .4rem 0 1.2rem 0;
+        padding-bottom: 1rem;
+    }
+    .brand-title {
+        color: #f8fafc;
+        font-size: 1.35rem;
+        font-weight: 800;
+        margin: 0;
+    }
+    .brand-subtitle {
+        color: var(--gold);
+        font-family: "JetBrains Mono", monospace;
+        font-size: .66rem;
+        letter-spacing: .12em;
+        margin-top: .2rem;
+    }
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.2rem;
+    }
+    .stat-card {
+        padding: 1.1rem;
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.015)), var(--panel);
+        box-shadow: inset 0 0 18px rgba(226,195,131,.025);
+    }
+    .stat-card .label {
+        color: var(--muted);
+        font-family: "JetBrains Mono", monospace;
+        font-size: .68rem;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
+    .stat-card .value {
+        color: #f8fafc;
+        font-size: 1.85rem;
+        font-weight: 800;
+        margin-top: .3rem;
+    }
+    .stat-card .hint {
+        color: var(--gold);
+        font-size: .78rem;
+        margin-top: .35rem;
+    }
     .metric-card {
         padding: 1rem;
-        border-radius: 14px;
-        border: 1px solid rgba(15, 23, 42, .10);
-        background: rgba(255, 255, 255, .86);
-        box-shadow: 0 14px 34px rgba(15, 23, 42, .07);
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        box-shadow: 0 18px 45px rgba(0,0,0,.18);
     }
     .metric-card,
     .metric-card * {
-        color: #0f172a !important;
+        color: var(--text) !important;
     }
     [data-testid="stChatMessage"] {
-        background: rgba(255, 255, 255, .90);
-        border: 1px solid rgba(15, 23, 42, .10);
+        background: rgba(15, 23, 42, .70);
+        border: 1px solid var(--line);
         border-radius: 14px;
-        box-shadow: 0 12px 28px rgba(15, 23, 42, .06);
+        box-shadow: 0 12px 28px rgba(0, 0, 0, .18);
     }
     [data-testid="stChatMessage"] *,
     [data-testid="stChatMessage"] p,
     [data-testid="stChatMessage"] li,
     [data-testid="stChatMessage"] strong {
-        color: #0f172a !important;
+        color: var(--text) !important;
     }
     [data-testid="stChatInput"] textarea {
         color: #f8fafc !important;
+        background: #101827 !important;
+        border: 1px solid var(--line) !important;
     }
     .stAlert,
     .stAlert * {
         color: #0f172a !important;
     }
     code {
-        color: #10b981 !important;
+        color: var(--gold) !important;
         background: #111827 !important;
         border-radius: 6px;
         padding: .12rem .3rem;
@@ -107,19 +201,78 @@ st.markdown(
         padding: .32rem .6rem;
         margin: .15rem;
         border-radius: 999px;
-        color: #155e75;
-        background: rgba(103, 232, 249, .25);
-        border: 1px solid rgba(8, 145, 178, .20);
+        color: var(--gold);
+        background: rgba(226, 195, 131, .10);
+        border: 1px solid rgba(226, 195, 131, .25);
         font-size: .82rem;
     }
     .stTabs [data-baseweb="tab-list"] {
         gap: .75rem;
     }
     .stTabs [data-baseweb="tab"] {
-        background: rgba(255, 255, 255, .82);
+        background: rgba(15, 23, 42, .66);
         border-radius: 999px;
         padding: .5rem 1rem;
-        border: 1px solid rgba(15, 23, 42, .10);
+        border: 1px solid var(--line);
+        color: var(--text);
+    }
+    .stTabs [aria-selected="true"] {
+        color: var(--gold) !important;
+        border-color: rgba(226,195,131,.45) !important;
+        background: rgba(226,195,131,.10) !important;
+    }
+    .doc-table {
+        width: 100%;
+        border-collapse: collapse;
+        overflow: hidden;
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        background: rgba(15, 23, 42, .64);
+    }
+    .doc-table th {
+        color: var(--muted);
+        font-family: "JetBrains Mono", monospace;
+        font-size: .68rem;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        padding: .85rem 1rem;
+        text-align: left;
+        border-bottom: 1px solid var(--line);
+    }
+    .doc-table td {
+        color: var(--text);
+        padding: .95rem 1rem;
+        border-bottom: 1px solid rgba(148,163,184,.08);
+    }
+    .status-pill {
+        color: var(--gold);
+        background: rgba(226, 195, 131, .10);
+        border: 1px solid rgba(226, 195, 131, .22);
+        padding: .25rem .55rem;
+        border-radius: 999px;
+        font-size: .75rem;
+        font-weight: 700;
+    }
+    .stButton > button {
+        border-radius: 12px;
+        font-weight: 800;
+        border: 1px solid rgba(226,195,131,.25);
+    }
+    .stButton > button[kind="primary"] {
+        background: var(--blue);
+        color: #0d1c2d;
+        border: 0;
+    }
+    [data-testid="stFileUploader"] section {
+        background: #040e1f !important;
+        border: 1px dashed rgba(226,195,131,.32) !important;
+        border-radius: 14px !important;
+    }
+    [data-testid="stFileUploader"] * {
+        color: var(--text) !important;
+    }
+    h1, h2, h3, h4, p, label, span, div {
+        letter-spacing: 0;
     }
     </style>
     """,
@@ -168,17 +321,31 @@ def build_knowledge_base(uploaded_files, repo_path: str) -> tuple[list[DocumentC
 
 init_state()
 
+loaded_docs = len(st.session_state.source_names)
+loaded_chunks = len(st.session_state.chunks)
+active_model = "gemini-2.5-flash"
+
 st.markdown(
     """
     <div class="hero">
-        <h1>Chatbot documental en la nube</h1>
-        <p>Consulta PDFs, Word, archivos de texto y repositorios. La app usa busqueda por contexto y un modelo en la nube para responder con base en tus documentos.</p>
+        <div class="eyebrow">Knowledge Base • RAG • Gemini Cloud</div>
+        <h1>DocIntelligence</h1>
+        <p>Consulta PDFs, Word, archivos de texto y repositorios con una interfaz web en la nube. La app procesa documentos, recupera contexto y responde con IA basada en tus fuentes.</p>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
 with st.sidebar:
+    st.markdown(
+        """
+        <div class="brand-block">
+            <div class="brand-title">DocIntelligence</div>
+            <div class="brand-subtitle">ENTERPRISE DEMO</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     st.header("Modelo")
     provider = st.radio("Proveedor", ["Gemini gratis", "Ollama local"])
     cloud_model = st.selectbox(
@@ -209,6 +376,30 @@ with st.sidebar:
             st.success(f"Listo: {len(st.session_state.chunks)} fragmentos procesados.")
         except Exception as exc:
             st.error(f"No se pudo procesar la informacion: {exc}")
+
+active_model = cloud_model if provider == "Gemini gratis" else local_model
+st.markdown(
+    f"""
+    <div class="stat-grid">
+        <div class="stat-card">
+            <div class="label">Documentos</div>
+            <div class="value">{len(st.session_state.source_names)}</div>
+            <div class="hint">Archivos listos para consulta</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Fragmentos RAG</div>
+            <div class="value">{len(st.session_state.chunks)}</div>
+            <div class="hint">Contexto indexado en memoria</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Modelo activo</div>
+            <div class="value" style="font-size:1.15rem">{active_model}</div>
+            <div class="hint">Proveedor: {provider}</div>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 tab_chat, tab_sources, tab_deploy = st.tabs(["Chat", "Fuentes", "Nube"])
 
@@ -264,6 +455,31 @@ with tab_sources:
     if st.session_state.source_names:
         pills = "".join(f'<span class="source-pill">{name}</span>' for name in st.session_state.source_names)
         st.markdown(pills, unsafe_allow_html=True)
+        rows = "".join(
+            f"""
+            <tr>
+                <td>{name}</td>
+                <td>{sum(1 for chunk in st.session_state.chunks if chunk.source == name)}</td>
+                <td><span class="status-pill">Indexed</span></td>
+            </tr>
+            """
+            for name in st.session_state.source_names
+        )
+        st.markdown(
+            f"""
+            <table class="doc-table">
+                <thead>
+                    <tr>
+                        <th>Document Name</th>
+                        <th>Chunks</th>
+                        <th>Vector Status</th>
+                    </tr>
+                </thead>
+                <tbody>{rows}</tbody>
+            </table>
+            """,
+            unsafe_allow_html=True,
+        )
     else:
         st.info("Todavia no has procesado documentos.")
 
