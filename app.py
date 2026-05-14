@@ -384,17 +384,15 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
     st.header("Modelo")
-    provider = st.radio("Proveedor", ["Gemini gratis", "Ollama local"])
+    provider = "Gemini gratis"
+    st.markdown('<span class="source-pill">Gemini gratis</span>', unsafe_allow_html=True)
     cloud_model = st.selectbox(
         "Modelo Gemini",
         ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash"],
         index=0,
     )
-    if provider == "Ollama local":
-        local_model = st.text_input("Modelo Ollama", value="llama3.1")
-    else:
-        local_model = "llama3.1"
-    top_k = st.slider("Contexto", min_value=3, max_value=10, value=6)
+    local_model = "llama3.1"
+    top_k = 6
 
     st.divider()
     st.header("Documentos")
