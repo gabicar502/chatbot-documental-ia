@@ -205,26 +205,42 @@ def get_gemini_client() -> genai.Client | None:
     return genai.Client(api_key=api_key)
 
 
+def gemini_model_candidates(model: str) -> list[str]:
+    fallback_models = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash"]
+    return [model] + [fallback for fallback in fallback_models if fallback != model]
+
+
+def generate_with_gemini(prompt: str, model: str) -> str:
+    client = get_gemini_client()
+    if client is None:
+        return "Falta configurar GEMINI_API_KEY. Puedes crear una gratis en Google AI Studio y ponerla en Streamlit Secrets."
+
+    errors: list[str] = []
+    for candidate in gemini_model_candidates(model):
+        try:
+            response = client.models.generate_content(model=candidate, contents=prompt)
+            text = response.text or "El modelo no devolvio texto."
+            if candidate != model:
+                return f"Nota: el modelo principal estaba ocupado, respondi con `{candidate}`.\n\n{text}"
+            return text
+        except Exception as exc:
+            errors.append(f"{candidate}: {exc}")
+            if "503" not in str(exc) and "UNAVAILABLE" not in str(exc):
+                break
+
+    return (
+        "No pude consultar Gemini en este momento. El servicio puede estar saturado o la API key puede tener limites. "
+        "Intenta de nuevo en unos minutos.\n\nDetalle tecnico: "
+        + " | ".join(errors)
+    )
+
+
 def answer_general_with_gemini(question: str, model: str) -> str:
-    try:
-        client = get_gemini_client()
-        if client is None:
-            return "Falta configurar GEMINI_API_KEY. Puedes crear una gratis en Google AI Studio y ponerla en Streamlit Secrets."
-        response = client.models.generate_content(model=model, contents=build_general_prompt(question))
-        return response.text or "El modelo no devolvio texto."
-    except Exception as exc:
-        return f"No pude consultar Gemini. Revisa la API key, el modelo o los limites gratuitos. Detalle: {exc}"
+    return generate_with_gemini(build_general_prompt(question), model)
 
 
 def answer_with_gemini(question: str, context_chunks: Sequence[DocumentChunk], model: str) -> str:
-    try:
-        client = get_gemini_client()
-        if client is None:
-            return "Falta configurar GEMINI_API_KEY. Puedes crear una gratis en Google AI Studio y ponerla en Streamlit Secrets."
-        response = client.models.generate_content(model=model, contents=build_prompt(question, context_chunks))
-        return response.text or "El modelo no devolvio texto."
-    except Exception as exc:
-        return f"No pude consultar Gemini. Revisa la API key, el modelo o los limites gratuitos. Detalle: {exc}"
+    return generate_with_gemini(build_prompt(question, context_chunks), model)
 
 
 def answer_with_ollama(question: str, context_chunks: Sequence[DocumentChunk], model: str) -> str:
