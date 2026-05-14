@@ -42,6 +42,7 @@ st.markdown(
     [data-testid="stSidebar"] {
         background: var(--panel-strong);
         border-right: 1px solid var(--line);
+        overflow: hidden !important;
     }
     [data-testid="stSidebar"] * {
         color: var(--text) !important;
@@ -58,6 +59,42 @@ st.markdown(
     [data-testid="stSidebar"] p,
     [data-testid="stSidebar"] .stCaptionContainer {
         color: var(--muted) !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+        gap: .55rem;
+    }
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3 {
+        margin: .15rem 0 .35rem 0 !important;
+        font-size: 1.05rem !important;
+        line-height: 1.2 !important;
+    }
+    [data-testid="stSidebar"] hr {
+        margin: .65rem 0 !important;
+    }
+    [data-testid="stSidebar"] .stRadio,
+    [data-testid="stSidebar"] .stSelectbox,
+    [data-testid="stSidebar"] .stTextInput,
+    [data-testid="stSidebar"] .stSlider,
+    [data-testid="stSidebar"] .stFileUploader {
+        margin-bottom: .2rem !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stFileUploader"] section {
+        min-height: 132px !important;
+        padding: .75rem !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stFileUploader"] section > div {
+        padding: .35rem !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stFileUploader"] small,
+    [data-testid="stSidebar"] [data-testid="stFileUploader"] svg {
+        display: none !important;
+    }
+    [data-testid="stSidebar"] button {
+        min-height: 2.35rem !important;
+        padding-top: .35rem !important;
+        padding-bottom: .35rem !important;
     }
     [data-testid="stHeader"] {
         background: transparent;
@@ -111,12 +148,12 @@ st.markdown(
     }
     .brand-block {
         border-bottom: 1px solid var(--line);
-        margin: .4rem 0 1.2rem 0;
-        padding-bottom: 1rem;
+        margin: .1rem 0 .65rem 0;
+        padding-bottom: .55rem;
     }
     .brand-title {
         color: #f8fafc;
-        font-size: 1.35rem;
+        font-size: 1.08rem;
         font-weight: 800;
         margin: 0;
     }
@@ -125,7 +162,7 @@ st.markdown(
         font-family: "JetBrains Mono", monospace;
         font-size: .66rem;
         letter-spacing: .12em;
-        margin-top: .2rem;
+        margin-top: .15rem;
     }
     .stat-grid {
         display: grid;
@@ -353,8 +390,11 @@ with st.sidebar:
         ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash"],
         index=0,
     )
-    local_model = st.text_input("Modelo Ollama", value="llama3.1")
-    top_k = st.slider("Contexto usado", min_value=3, max_value=10, value=6)
+    if provider == "Ollama local":
+        local_model = st.text_input("Modelo Ollama", value="llama3.1")
+    else:
+        local_model = "llama3.1"
+    top_k = st.slider("Contexto", min_value=3, max_value=10, value=6)
 
     st.divider()
     st.header("Documentos")
@@ -364,8 +404,8 @@ with st.sidebar:
         type=["pdf", "docx", "txt", "md", "py", "js", "ts", "html", "css", "json", "csv", "sql"],
     )
     repo_path = st.text_input(
-        "Repositorio local opcional",
-        placeholder="Dejalo vacio si solo vas a subir PDF o Word",
+        "Carpeta de repo opcional",
+        placeholder="Dejalo vacio para PDF o Word",
         help="Este campo es solo para carpetas de codigo. Para PDF o Word usa el boton de subir archivos.",
     )
 
