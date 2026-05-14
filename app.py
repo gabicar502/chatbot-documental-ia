@@ -321,14 +321,21 @@ def init_state() -> None:
     st.session_state.setdefault("chunks", [])
     st.session_state.setdefault("messages", [])
     st.session_state.setdefault("source_names", [])
+    st.session_state.setdefault("uploader_key", 0)
 
 
 def save_uploaded_files(uploaded_files) -> list[Path]:
     temp_dir = Path(tempfile.mkdtemp(prefix="chatbot_web_"))
     paths = []
+    seen_files = set()
     for uploaded_file in uploaded_files:
+        file_bytes = uploaded_file.getvalue()
+        signature = (uploaded_file.name, len(file_bytes))
+        if signature in seen_files:
+            continue
+        seen_files.add(signature)
         path = temp_dir / uploaded_file.name
-        path.write_bytes(uploaded_file.getvalue())
+        path.write_bytes(file_bytes)
         paths.append(path)
     return paths
 
@@ -400,6 +407,7 @@ with st.sidebar:
         "Sube PDF, Word o archivos",
         accept_multiple_files=True,
         type=["pdf", "docx", "txt", "md", "py", "js", "ts", "html", "css", "json", "csv", "sql"],
+        key=f"uploaded_files_{st.session_state.uploader_key}",
     )
     repo_path = st.text_input(
         "Carpeta de repo opcional",
@@ -414,6 +422,12 @@ with st.sidebar:
             st.success(f"Listo: {len(st.session_state.chunks)} fragmentos procesados.")
         except Exception as exc:
             st.error(f"No se pudo procesar la informacion: {exc}")
+
+    if st.button("Limpiar documentos", use_container_width=True):
+        st.session_state.chunks = []
+        st.session_state.source_names = []
+        st.session_state.uploader_key += 1
+        st.rerun()
 
 active_model = cloud_model if provider == "Gemini gratis" else local_model
 st.markdown(
