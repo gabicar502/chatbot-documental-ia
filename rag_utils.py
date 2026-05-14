@@ -161,6 +161,13 @@ def retrieve_context(query: str, chunks: Sequence[DocumentChunk], top_k: int = 6
     return relevant[:top_k] or [chunk for _, chunk in scored[:top_k]]
 
 
+def has_document_match(query: str, chunks: Sequence[DocumentChunk]) -> bool:
+    if not chunks:
+        return False
+    best_score = max(keyword_score(query, chunk) for chunk in chunks)
+    return best_score >= 2
+
+
 def build_prompt(question: str, context_chunks: Sequence[DocumentChunk]) -> str:
     context = "\n\n".join(f"Fuente: {chunk.source}\nContenido: {chunk.text}" for chunk in context_chunks)
     return f"""
@@ -178,13 +185,42 @@ Pregunta del usuario:
 """.strip()
 
 
-def answer_with_gemini(question: str, context_chunks: Sequence[DocumentChunk], model: str) -> str:
+def build_general_prompt(question: str) -> str:
+    return f"""
+Eres un chatbot academico y conversacional.
+Responde en espanol natural, claro y util.
+Puedes responder preguntas generales, explicar conceptos, ayudar a redactar, resumir ideas y orientar al usuario.
+Si el usuario pregunta por documentos cargados y no recibes contexto, indica que debe cargar o procesar el documento.
+No inventes que viste documentos si no se te entrego contexto.
+
+Pregunta del usuario:
+{question}
+""".strip()
+
+
+def get_gemini_client() -> genai.Client | None:
     api_key = get_secret("GEMINI_API_KEY")
     if not api_key:
-        return "Falta configurar GEMINI_API_KEY. Puedes crear una gratis en Google AI Studio y ponerla en Streamlit Secrets."
+        return None
+    return genai.Client(api_key=api_key)
 
+
+def answer_general_with_gemini(question: str, model: str) -> str:
     try:
-        client = genai.Client(api_key=api_key)
+        client = get_gemini_client()
+        if client is None:
+            return "Falta configurar GEMINI_API_KEY. Puedes crear una gratis en Google AI Studio y ponerla en Streamlit Secrets."
+        response = client.models.generate_content(model=model, contents=build_general_prompt(question))
+        return response.text or "El modelo no devolvio texto."
+    except Exception as exc:
+        return f"No pude consultar Gemini. Revisa la API key, el modelo o los limites gratuitos. Detalle: {exc}"
+
+
+def answer_with_gemini(question: str, context_chunks: Sequence[DocumentChunk], model: str) -> str:
+    try:
+        client = get_gemini_client()
+        if client is None:
+            return "Falta configurar GEMINI_API_KEY. Puedes crear una gratis en Google AI Studio y ponerla en Streamlit Secrets."
         response = client.models.generate_content(model=model, contents=build_prompt(question, context_chunks))
         return response.text or "El modelo no devolvio texto."
     except Exception as exc:
@@ -214,8 +250,13 @@ def answer_question(
     local_model: str,
     top_k: int,
 ) -> tuple[str, list[DocumentChunk]]:
+    if provider == "Gemini gratis" and not chunks:
+        return answer_general_with_gemini(question, cloud_model), []
+
+    if provider == "Gemini gratis" and not has_document_match(question, chunks):
+        return answer_general_with_gemini(question, cloud_model), []
+
     context_chunks = retrieve_context(question, chunks, top_k=top_k)
     if provider == "Gemini gratis":
         return answer_with_gemini(question, context_chunks, cloud_model), context_chunks
     return answer_with_ollama(question, context_chunks, local_model), context_chunks
-

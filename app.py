@@ -458,25 +458,21 @@ with tab_chat:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
 
-        question = st.chat_input("Pregunta algo sobre tus documentos...")
+        question = st.chat_input("Pregunta sobre tus documentos o cualquier tema...")
         if question:
             st.session_state.messages.append({"role": "user", "content": question})
             with st.chat_message("user"):
                 st.markdown(question)
 
-            if not st.session_state.chunks:
-                answer = "Primero sube documentos y pulsa **Procesar documentos**."
-                sources = []
-            else:
-                with st.spinner("Buscando contexto y generando respuesta..."):
-                    answer, sources = answer_question(
-                        question=question,
-                        chunks=st.session_state.chunks,
-                        provider=provider,
-                        cloud_model=cloud_model,
-                        local_model=local_model,
-                        top_k=top_k,
-                    )
+            with st.spinner("Generando respuesta..."):
+                answer, sources = answer_question(
+                    question=question,
+                    chunks=st.session_state.chunks,
+                    provider=provider,
+                    cloud_model=cloud_model,
+                    local_model=local_model,
+                    top_k=top_k,
+                )
 
             with st.chat_message("assistant"):
                 st.markdown(answer)
