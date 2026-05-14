@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+*.log
+.streamlit/secrets.toml
+*.docx
+*.pdf
+*.jpeg
+*.jpg
+*.png
+DOCUMENTO DE PRUEBA PARA CONSULTA C.txt

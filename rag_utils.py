@@ -1,0 +1,221 @@
+from __future__ import annotations
+
+import os
+import re
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Iterable, Sequence
+
+import requests
+import streamlit as st
+from docx import Document
+from google import genai
+from pypdf import PdfReader
+
+TEXT_EXTENSIONS = {
+    ".txt",
+    ".md",
+    ".py",
+    ".js",
+    ".ts",
+    ".tsx",
+    ".jsx",
+    ".java",
+    ".cs",
+    ".cpp",
+    ".c",
+    ".h",
+    ".html",
+    ".css",
+    ".json",
+    ".yaml",
+    ".yml",
+    ".xml",
+    ".csv",
+    ".sql",
+}
+
+IGNORED_DIRS = {
+    ".git",
+    ".venv",
+    "venv",
+    "node_modules",
+    "__pycache__",
+    ".idea",
+    ".vscode",
+    "dist",
+    "build",
+}
+
+
+@dataclass
+class DocumentChunk:
+    source: str
+    text: str
+
+
+def get_secret(name: str) -> str | None:
+    try:
+        return st.secrets.get(name) or os.getenv(name)
+    except Exception:
+        return os.getenv(name)
+
+
+def read_pdf(path: Path) -> str:
+    reader = PdfReader(str(path))
+    pages = []
+    for index, page in enumerate(reader.pages, start=1):
+        text = page.extract_text() or ""
+        if text.strip():
+            pages.append(f"[Pagina {index}]\n{text}")
+    return "\n\n".join(pages)
+
+
+def read_docx(path: Path) -> str:
+    document = Document(str(path))
+    paragraphs = [paragraph.text.strip() for paragraph in document.paragraphs if paragraph.text.strip()]
+    return "\n".join(paragraphs)
+
+
+def read_text_file(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        return path.read_text(encoding="latin-1", errors="ignore")
+
+
+def iter_repository_files(repo_path: Path) -> Iterable[Path]:
+    for path in repo_path.rglob("*"):
+        if not path.is_file():
+            continue
+        if any(part in IGNORED_DIRS for part in path.parts):
+            continue
+        if path.suffix.lower() in TEXT_EXTENSIONS or path.suffix.lower() in {".pdf", ".docx"}:
+            yield path
+
+
+def chunk_text(text: str, source: str, chunk_size: int = 1300, overlap: int = 180) -> list[DocumentChunk]:
+    clean = " ".join(text.split())
+    if not clean:
+        return []
+
+    chunks: list[DocumentChunk] = []
+    start = 0
+    while start < len(clean):
+        end = min(start + chunk_size, len(clean))
+        chunks.append(DocumentChunk(source=source, text=clean[start:end]))
+        if end == len(clean):
+            break
+        start = max(end - overlap, start + 1)
+    return chunks
+
+
+def load_file(path: Path) -> list[DocumentChunk]:
+    suffix = path.suffix.lower()
+    if suffix == ".pdf":
+        text = read_pdf(path)
+    elif suffix == ".docx":
+        text = read_docx(path)
+    elif suffix in TEXT_EXTENSIONS:
+        text = read_text_file(path)
+    else:
+        return []
+    return chunk_text(text, path.name)
+
+
+def load_repository(repo_path: str) -> list[DocumentChunk]:
+    root = Path(repo_path).expanduser().resolve()
+    if not root.exists() or not root.is_dir():
+        raise ValueError("La ruta del repositorio no existe o no es una carpeta.")
+
+    chunks: list[DocumentChunk] = []
+    for path in iter_repository_files(root):
+        try:
+            relative = path.relative_to(root)
+            loaded = load_file(path)
+            chunks.extend(DocumentChunk(source=f"{root.name}/{relative}", text=chunk.text) for chunk in loaded)
+        except Exception:
+            continue
+    return chunks
+
+
+def normalize_terms(text: str) -> list[str]:
+    return [term for term in re.findall(r"\w+", text.lower()) if len(term) > 2]
+
+
+def keyword_score(query: str, chunk: DocumentChunk) -> float:
+    query_terms = set(normalize_terms(query))
+    chunk_terms = normalize_terms(chunk.text)
+    if not query_terms or not chunk_terms:
+        return 0
+
+    chunk_set = set(chunk_terms)
+    overlap = len(query_terms & chunk_set)
+    density = sum(chunk_terms.count(term) for term in query_terms) / len(chunk_terms)
+    return overlap * 2 + density
+
+
+def retrieve_context(query: str, chunks: Sequence[DocumentChunk], top_k: int = 6) -> list[DocumentChunk]:
+    scored = sorted(((keyword_score(query, chunk), chunk) for chunk in chunks), key=lambda item: item[0], reverse=True)
+    relevant = [chunk for score, chunk in scored if score > 0]
+    return relevant[:top_k] or [chunk for _, chunk in scored[:top_k]]
+
+
+def build_prompt(question: str, context_chunks: Sequence[DocumentChunk]) -> str:
+    context = "\n\n".join(f"Fuente: {chunk.source}\nContenido: {chunk.text}" for chunk in context_chunks)
+    return f"""
+Eres un chatbot academico especializado en responder preguntas sobre documentos.
+Responde siempre en espanol, con claridad y precision.
+Usa unicamente la informacion del contexto.
+Si la respuesta no aparece en el contexto, responde: "No encuentro esa informacion en los documentos cargados".
+No inventes datos. Cita la fuente usada al final de cada respuesta.
+
+Contexto:
+{context}
+
+Pregunta del usuario:
+{question}
+""".strip()
+
+
+def answer_with_gemini(question: str, context_chunks: Sequence[DocumentChunk], model: str) -> str:
+    api_key = get_secret("GEMINI_API_KEY")
+    if not api_key:
+        return "Falta configurar GEMINI_API_KEY. Puedes crear una gratis en Google AI Studio y ponerla en Streamlit Secrets."
+
+    try:
+        client = genai.Client(api_key=api_key)
+        response = client.models.generate_content(model=model, contents=build_prompt(question, context_chunks))
+        return response.text or "El modelo no devolvio texto."
+    except Exception as exc:
+        return f"No pude consultar Gemini. Revisa la API key, el modelo o los limites gratuitos. Detalle: {exc}"
+
+
+def answer_with_ollama(question: str, context_chunks: Sequence[DocumentChunk], model: str) -> str:
+    payload = {
+        "model": model,
+        "prompt": build_prompt(question, context_chunks),
+        "stream": False,
+        "options": {"temperature": 0.2},
+    }
+    try:
+        response = requests.post("http://localhost:11434/api/generate", json=payload, timeout=120)
+        response.raise_for_status()
+        return response.json().get("response", "")
+    except requests.RequestException as exc:
+        return f"No pude conectar con Ollama. Verifica que este abierto y que el modelo `{model}` exista. Detalle: {exc}"
+
+
+def answer_question(
+    question: str,
+    chunks: Sequence[DocumentChunk],
+    provider: str,
+    cloud_model: str,
+    local_model: str,
+    top_k: int,
+) -> tuple[str, list[DocumentChunk]]:
+    context_chunks = retrieve_context(question, chunks, top_k=top_k)
+    if provider == "Gemini gratis":
+        return answer_with_gemini(question, context_chunks, cloud_model), context_chunks
+    return answer_with_ollama(question, context_chunks, local_model), context_chunks
+
