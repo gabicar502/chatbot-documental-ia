@@ -23,6 +23,15 @@ $env:GEMINI_API_KEY="tu_api_key"
 streamlit run app.py
 ```
 
+## Ejecutar chatbot local con Ollama
+
+```powershell
+ollama pull llama3.1
+streamlit run app_local_ollama.py
+```
+
+Esta versión usa una interfaz web local y consulta Ollama en `http://localhost:11434`.
+
 ## Desplegar en Streamlit Community Cloud
 
 1. Sube `app.py`, `rag_utils.py`, `requirements.txt` y `README.md` a GitHub.
@@ -46,4 +55,3 @@ GEMINI_API_KEY = "tu_api_key"
 - Respuestas con fuentes.
 - Modelo en nube gratuito con Gemini.
 - Opcion local con Ollama para comparar enfoques.
-

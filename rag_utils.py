@@ -258,6 +258,21 @@ def answer_with_ollama(question: str, context_chunks: Sequence[DocumentChunk], m
         return f"No pude conectar con Ollama. Verifica que este abierto y que el modelo `{model}` exista. Detalle: {exc}"
 
 
+def answer_general_with_ollama(question: str, model: str) -> str:
+    payload = {
+        "model": model,
+        "prompt": build_general_prompt(question),
+        "stream": False,
+        "options": {"temperature": 0.3},
+    }
+    try:
+        response = requests.post("http://localhost:11434/api/generate", json=payload, timeout=120)
+        response.raise_for_status()
+        return response.json().get("response", "")
+    except requests.RequestException as exc:
+        return f"No pude conectar con Ollama. Verifica que este abierto y que el modelo `{model}` exista. Detalle: {exc}"
+
+
 def answer_question(
     question: str,
     chunks: Sequence[DocumentChunk],
@@ -271,6 +286,12 @@ def answer_question(
 
     if provider == "Gemini gratis" and not has_document_match(question, chunks):
         return answer_general_with_gemini(question, cloud_model), []
+
+    if provider != "Gemini gratis" and not chunks:
+        return answer_general_with_ollama(question, local_model), []
+
+    if provider != "Gemini gratis" and not has_document_match(question, chunks):
+        return answer_general_with_ollama(question, local_model), []
 
     context_chunks = retrieve_context(question, chunks, top_k=top_k)
     if provider == "Gemini gratis":
