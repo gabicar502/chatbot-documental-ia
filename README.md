@@ -5,7 +5,7 @@ Este proyecto implementa dos chatbots documentales con interfaz web:
 - **Chatbot en la nube:** usa Streamlit Cloud y Gemini API.
 - **Chatbot local:** usa Streamlit local y Ollama.
 
-Ambas versiones permiten consultar documentos con RAG y tambien responder preguntas generales en lenguaje natural.
+Ambas versiones permiten consultar documentos con RAG. Antes de preguntar se debe cargar y procesar un archivo; el chatbot no se usa como asistente de preguntas libres.
 
 ## Archivos principales
 
@@ -127,7 +127,7 @@ Este archivo contiene el funcionamiento interno:
 - Creacion del prompt.
 - Consulta a Gemini.
 - Consulta a Ollama.
-- Respuesta general cuando no hay documentos cargados.
+- Bloqueo de preguntas libres cuando no hay documentos procesados.
 
 ## Como funciona RAG
 
@@ -143,7 +143,7 @@ Flujo:
 6. Esos fragmentos se envian al modelo como contexto.
 7. El modelo responde usando esa informacion.
 
-Si no hay documentos cargados, el chatbot responde como asistente general.
+Si no hay documentos cargados, el chatbot solicita subir y procesar un archivo. Si la pregunta no se relaciona con el documento, muestra un mensaje para preguntar por el contenido cargado.
 
 ## Por que se cambio OpenRouter/free
 
@@ -168,7 +168,7 @@ Ventajas de la nueva version:
 - Mejor calidad de respuesta.
 - Carga directa de PDF, Word y archivos.
 - Respuestas sobre documentos usando RAG.
-- Respuestas generales en lenguaje natural.
+- Respuestas restringidas al documento procesado.
 - Uso de Secrets para no subir la API key al repositorio.
 
 ## Ejecutar chatbot en la nube localmente
@@ -294,7 +294,7 @@ http://localhost:11434
 - Lectura de archivos de texto y codigo.
 - Consulta opcional de repositorios/carpetas.
 - RAG para responder con contexto documental.
-- Respuestas generales sin documentos.
+- Restriccion a preguntas relacionadas con el documento procesado.
 - Vista de fuentes consultadas.
 - Boton para limpiar documentos.
 - Fallback de modelos Gemini cuando hay alta demanda.

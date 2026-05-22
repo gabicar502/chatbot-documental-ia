@@ -472,7 +472,7 @@ with tab_chat:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
 
-        question = st.chat_input("Pregunta sobre tus documentos o cualquier tema...")
+        question = st.chat_input("Pregunta solo sobre el documento procesado...")
         if question:
             st.session_state.messages.append({"role": "user", "content": question})
             with st.chat_message("user"):

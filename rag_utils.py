@@ -164,6 +164,26 @@ def retrieve_context(query: str, chunks: Sequence[DocumentChunk], top_k: int = 6
 def has_document_match(query: str, chunks: Sequence[DocumentChunk]) -> bool:
     if not chunks:
         return False
+    document_request_terms = {
+        "archivo",
+        "capitulo",
+        "capítulo",
+        "conclusion",
+        "conclusión",
+        "conclusiones",
+        "documento",
+        "metodologia",
+        "metodología",
+        "pdf",
+        "resumen",
+        "resume",
+        "resumeme",
+        "resúmeme",
+        "texto",
+        "word",
+    }
+    if set(normalize_terms(query)) & document_request_terms:
+        return True
     best_score = max(keyword_score(query, chunk) for chunk in chunks)
     return best_score >= 2
 
@@ -179,19 +199,6 @@ No inventes datos. Cita la fuente usada al final de cada respuesta.
 
 Contexto:
 {context}
-
-Pregunta del usuario:
-{question}
-""".strip()
-
-
-def build_general_prompt(question: str) -> str:
-    return f"""
-Eres un chatbot academico y conversacional.
-Responde en espanol natural, claro y util.
-Puedes responder preguntas generales, explicar conceptos, ayudar a redactar, resumir ideas y orientar al usuario.
-Si el usuario pregunta por documentos cargados y no recibes contexto, indica que debe cargar o procesar el documento.
-No inventes que viste documentos si no se te entrego contexto.
 
 Pregunta del usuario:
 {question}
@@ -235,10 +242,6 @@ def generate_with_gemini(prompt: str, model: str) -> str:
     )
 
 
-def answer_general_with_gemini(question: str, model: str) -> str:
-    return generate_with_gemini(build_general_prompt(question), model)
-
-
 def answer_with_gemini(question: str, context_chunks: Sequence[DocumentChunk], model: str) -> str:
     return generate_with_gemini(build_prompt(question, context_chunks), model)
 
@@ -258,21 +261,6 @@ def answer_with_ollama(question: str, context_chunks: Sequence[DocumentChunk], m
         return f"No pude conectar con Ollama. Verifica que este abierto y que el modelo `{model}` exista. Detalle: {exc}"
 
 
-def answer_general_with_ollama(question: str, model: str) -> str:
-    payload = {
-        "model": model,
-        "prompt": build_general_prompt(question),
-        "stream": False,
-        "options": {"temperature": 0.3},
-    }
-    try:
-        response = requests.post("http://localhost:11434/api/generate", json=payload, timeout=120)
-        response.raise_for_status()
-        return response.json().get("response", "")
-    except requests.RequestException as exc:
-        return f"No pude conectar con Ollama. Verifica que este abierto y que el modelo `{model}` exista. Detalle: {exc}"
-
-
 def answer_question(
     question: str,
     chunks: Sequence[DocumentChunk],
@@ -281,17 +269,15 @@ def answer_question(
     local_model: str,
     top_k: int,
 ) -> tuple[str, list[DocumentChunk]]:
-    if provider == "Gemini gratis" and not chunks:
-        return answer_general_with_gemini(question, cloud_model), []
+    if not chunks:
+        return "Primero sube y procesa un documento. Este chatbot solo responde preguntas basadas en los archivos cargados.", []
 
-    if provider == "Gemini gratis" and not has_document_match(question, chunks):
-        return answer_general_with_gemini(question, cloud_model), []
-
-    if provider != "Gemini gratis" and not chunks:
-        return answer_general_with_ollama(question, local_model), []
-
-    if provider != "Gemini gratis" and not has_document_match(question, chunks):
-        return answer_general_with_ollama(question, local_model), []
+    if not has_document_match(question, chunks):
+        return (
+            "No encuentro relación suficiente entre esa pregunta y el documento procesado. "
+            "Pregunta por el contenido, metodología, conclusiones, resumen o datos del archivo cargado.",
+            [],
+        )
 
     context_chunks = retrieve_context(question, chunks, top_k=top_k)
     if provider == "Gemini gratis":

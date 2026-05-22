@@ -228,7 +228,7 @@ st.markdown(
     <div class="hero">
         <div class="eyebrow">Local AI • Ollama • RAG</div>
         <h1>Chatbot documental local</h1>
-        <p>Interfaz web local para consultar documentos con Ollama. Funciona sin enviar tus archivos a la nube y también responde preguntas generales en lenguaje natural.</p>
+        <p>Interfaz web local para consultar documentos con Ollama. Funciona sin enviar tus archivos a la nube y responde usando el contenido que proceses.</p>
     </div>
     """,
     unsafe_allow_html=True,
@@ -307,7 +307,7 @@ with tab_chat:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
 
-        question = st.chat_input("Pregunta sobre tus documentos o cualquier tema...")
+        question = st.chat_input("Pregunta solo sobre el documento procesado...")
         if question:
             st.session_state.messages.append({"role": "user", "content": question})
             with st.chat_message("user"):
@@ -358,6 +358,6 @@ with tab_help:
         streamlit run app_local_ollama.py
         ```
 
-        4. Carga documentos o escribe una pregunta general.
+        4. Carga y procesa documentos antes de preguntar por su contenido.
         """
     )
